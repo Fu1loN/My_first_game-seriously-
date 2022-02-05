@@ -807,6 +807,8 @@ if __name__ == "__main__":
     width, height = 800, 700
     size = width, height
     screen = pygame.display.set_mode(size)
+    pygame.display.set_caption("Игра the game")
+    pygame.display.set_icon(load_image('1.png', colorkey=(255,255,255)))
     ZASTAVKA = load_image("ZASTAVKA.png")
     screen.blit(ZASTAVKA, (0, 0))
     pygame.display.flip()
