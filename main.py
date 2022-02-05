@@ -22,7 +22,18 @@ def load_image(name, colorkey=None):
         image = image.convert_alpha()
     return image
 
+def colide(her, group):
+    z = her.pseudorect
+    #print(z, her.rect)
+    c = []
+    for i in group:
+        if z.colliderect(i.rect):
+            c.append(i)
+    return c
 
+def pseudo(r):
+    y, x = r.top, r.left
+    return pygame.Rect(x + 3, y, 44, 50)
 class Pole:
     def __init__(self, level):
         self.level = level
@@ -142,6 +153,7 @@ class Pole:
         self.trigger.update()
 
 
+
 class Charecter(pygame.sprite.Sprite):
     def __init__(self, pos):
         super().__init__(all_sprites)
@@ -151,6 +163,7 @@ class Charecter(pygame.sprite.Sprite):
         self.image = self.imgs[0]
         x, y = pos
         self.rect = pygame.Rect(x, y, 50, 50)
+        self.pseudorect = pseudo(self.rect)
         # print(self.rect.bottom)
         self.x_move = 0
         self.y_move = 0
@@ -238,6 +251,7 @@ class Charecter(pygame.sprite.Sprite):
             # pole.test_init()
 
         self.move()
+        self.pseudorect = self.pseudorect.move(self.x_move, self.y_move)
         if self.dying:
             self.tm -= 1
             if self.tm == 0:
@@ -283,9 +297,9 @@ class Charecter(pygame.sprite.Sprite):
 
             # проверка на косание
 
-            self.rect = self.rect.move(0, y)
-            lst_col = pygame.sprite.spritecollide(self, all_wals, False)
-            self.rect = self.rect.move(0, -y)
+            self.pseudorect = self.pseudorect.move(0, y)
+            lst_col = colide(self, all_wals)
+            self.pseudorect = self.pseudorect.move(0, -y)
             # if касание реакция
             if lst_col:
                 if all(map(lambda x: x.is_killing(), lst_col)):
@@ -302,7 +316,7 @@ class Charecter(pygame.sprite.Sprite):
                         if i.rect.bottom > b:
                             b = i.rect.bottom
 
-                    y = b - self.rect.top
+                    y = b - self.pseudorect.top
                 else:
                     b = 1000
 
@@ -312,7 +326,7 @@ class Charecter(pygame.sprite.Sprite):
                             b = i.rect.top
 
                     # print(b)
-                    y = b - self.rect.bottom
+                    y = b - self.pseudorect.bottom
                     self.mod = 0
                     pole.effects.append(Fall_Effect(self.rect.left - 10, self.rect.top + y))
                     self.can_doble = True
@@ -324,10 +338,9 @@ class Charecter(pygame.sprite.Sprite):
         elif self.mod == 3:
             self.y_move = 0
         elif self.mod == 0:
-            self.rect = self.rect.move(0, 1)
-            lst_col = pygame.sprite.spritecollide(self, all_wals, False)
-
-            self.rect = self.rect.move(0, -1)
+            self.pseudorect = self.pseudorect.move(0, 1)
+            lst_col = colide(self, all_wals)
+            self.pseudorect = self.pseudorect.move(0, -1)
             if lst_col:
                 if all(map(lambda x: x.is_killing(), lst_col)):
                     self.dying = True
@@ -356,11 +369,9 @@ class Charecter(pygame.sprite.Sprite):
                 elif x > 0:
                     x -= 0.3
                     x = max(0, x)
-
-            self.rect = self.rect.move(x, 0)
-
-            lst_col = pygame.sprite.spritecollide(self, all_wals, False)
-            self.rect = self.rect.move(-x, 0)
+            self.pseudorect = self.pseudorect.move(x, 0)
+            lst_col = colide(self, all_wals)
+            self.pseudorect = self.pseudorect.move(-x, 0)
 
             if lst_col:
                 if all(map(lambda x: x.is_killing(), lst_col)):
@@ -378,7 +389,7 @@ class Charecter(pygame.sprite.Sprite):
                         if i.rect.right > b:
                             b = i.rect.right
 
-                    x = b - self.rect.left
+                    x = b - self.pseudorect.left
                 else:
                     b = 1000
 
@@ -388,7 +399,7 @@ class Charecter(pygame.sprite.Sprite):
                             b = i.rect.left
 
                     # print(b)
-                    x = b - self.rect.right
+                    x = b - self.pseudorect.right
                     # print(b, self.rect.right)
 
                 # print(b, self.rect.bottom)
@@ -409,11 +420,9 @@ class Charecter(pygame.sprite.Sprite):
                     x -= 0.5
                     x = max(0, x)
 
-            self.rect = self.rect.move(x, 0)
-            # print(self.rect.right, end=' ')
-            lst_col = pygame.sprite.spritecollide(self, all_wals, False)
-            self.rect = self.rect.move(-x, 0)
-            # print(self.rect.right, end='\n')
+            self.pseudorect = self.pseudorect.move(x, 0)
+            lst_col = colide(self, all_wals)
+            self.pseudorect = self.pseudorect.move(-x, 0)
 
             if lst_col:
                 if all(map(lambda x: x.is_killing(), lst_col)):
@@ -431,7 +440,7 @@ class Charecter(pygame.sprite.Sprite):
                         if i.rect.right > b:
                             b = i.rect.right
 
-                    x = b - self.rect.left
+                    x = b - self.pseudorect.left
                 else:
                     b = 1000
 
@@ -441,7 +450,7 @@ class Charecter(pygame.sprite.Sprite):
                             b = i.rect.left
 
                     # print(b)
-                    x = b - self.rect.right
+                    x = b - self.pseudorect.right
                     # print(b, self.rect.right)
 
                 # print(b, self.rect.bottom)
@@ -451,9 +460,9 @@ class Charecter(pygame.sprite.Sprite):
         elif self.mod == 2:
             self.image = self.imgs[2]
             x = DASH_SPEED * self.rat
-            self.rect = self.rect.move(x, 0)
-            lst_col = pygame.sprite.spritecollide(self, all_wals, False)
-            self.rect = self.rect.move(-x, 0)
+            self.pseudorect = self.pseudorect.move(x, 0)
+            lst_col = colide(self, all_wals)
+            self.pseudorect = self.pseudorect.move(-x, 0)
             if lst_col:
                 if all(map(lambda x: x.is_killing(), lst_col)):
                     # print(11111111)
@@ -471,7 +480,7 @@ class Charecter(pygame.sprite.Sprite):
                         if i.rect.right > b:
                             b = i.rect.right
 
-                    x = b - self.rect.left
+                    x = b - self.pseudorect.left
                 else:
                     b = 1000
 
@@ -481,7 +490,7 @@ class Charecter(pygame.sprite.Sprite):
                             b = i.rect.left
 
                     # print(b)
-                    x = b - self.rect.right
+                    x = b - self.pseudorect.right
                     # print(b, self.rect.right)
 
                 # print(b, self.rect.bottom)
@@ -508,6 +517,7 @@ class Charecter(pygame.sprite.Sprite):
     def die(self):
         x, y = pole.respown
         self.rect = pygame.Rect(x, y, 50, 50)
+        self.pseudorect = pseudo(self.rect)
         self.mod = 1
         self.x_move = 0
         self.y_move = 0
@@ -809,7 +819,7 @@ if __name__ == "__main__":
     JUMP_IMGS = [load_image(f'jump\{s + 1}.png', colorkey=(255, 255, 255)) for s in range(11)]
     FALL_IMGS = [load_image(f'fall\{s + 1}.png', colorkey=(255, 255, 255)) for s in range(7)]
     WALL = load_image('wall.png')
-    ZAD = [load_image('zadnik.png'), load_image("zadnik2.png")]
+    ZAD = [load_image('zadnik.png')]
     SL = load_image('ship_left.png', colorkey=(255, 255, 255))
     SR = load_image('ship_right.png', colorkey=(255, 255, 255))
     SU = load_image('ship_up.png', colorkey=(255, 255, 255))
