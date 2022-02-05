@@ -184,13 +184,13 @@ class Charecter(pygame.sprite.Sprite):
                 print(self.rect.right)
 
             elif ev.key == 97 and self.mod != 2:
-                self.x_move = -5
+                self.x_move = -2.5
                 self.lpress = True
                 self.rat = -1
             # elif ev.key == pygame.K_UP:
             # self.y_move = -5
             elif ev.key == 100 and self.mod != 2:
-                self.x_move = 5
+                self.x_move = 2.5
                 self.rpress = True
                 self.rat = 1
             # elif ev.key == pygame.K_DOWN:
@@ -229,12 +229,14 @@ class Charecter(pygame.sprite.Sprite):
                 self.jump_boost = -100000
 
     def update(self):
+
         if pygame.sprite.spritecollide(self, triger, False):
             pole.next_level()
             #try:
              #   pole.next_level()
             #except:
                 #pole.test_init()
+
         self.move()
         if self.cd != 0:
             self.cd -= 1
@@ -329,6 +331,8 @@ class Charecter(pygame.sprite.Sprite):
         if self.mod == 1:
 
             x = self.x_move
+            if (self.lpress or self.rpress) and abs(x) < 5:
+                x += self.rat / 4
             # print(x)
             if not self.lpress and not self.rpress or abs(x) > 5:
                 if x < 0:
@@ -376,6 +380,8 @@ class Charecter(pygame.sprite.Sprite):
         elif self.mod == 0:
 
             x = self.x_move
+            if (self.lpress or self.rpress) and abs(x) < 5:
+                x += self.rat / 4
             # print(x)
             if not self.lpress and not self.rpress or abs(x) > 5:
                 if x < 0:
