@@ -31,7 +31,6 @@ class Pole:
         self.pressdbtn = None
         self.update_level()
 
-
     def next_level(self):
         self.level += 1
         self.update_level()
@@ -59,9 +58,9 @@ class Pole:
             self.arr = []
             self.obj = None
             self.butns = []
-            self.butns.append(Button(0,0,50,50,new_item, "menu"))
-            self.butns.append(Button(50,0,50,50, delete_last, "reset"))
-            self.butns.append(Button(100,0,50,50,savve, "save"))
+            self.butns.append(Button(0, 0, 50, 50, new_item, "menu"))
+            self.butns.append(Button(50, 0, 50, 50, delete_last, "reset"))
+            self.butns.append(Button(100, 0, 50, 50, savve, "save"))
             lvl = Level(5)
             self.arr, self.respown, self.trigger = lvl.init()
             self.hero = Charecter(self.respown)
@@ -165,6 +164,7 @@ class Charecter(pygame.sprite.Sprite):
         self.charge = 0
         self.can_dash = True
         self.cd = 0
+        self.dying = False
         self.jump_boost = -100000
 
         self.can_doble = True
@@ -232,12 +232,21 @@ class Charecter(pygame.sprite.Sprite):
 
         if pygame.sprite.spritecollide(self, triger, False):
             pole.next_level()
-            #try:
-             #   pole.next_level()
-            #except:
-                #pole.test_init()
+            # try:
+            #   pole.next_level()
+            # except:
+            # pole.test_init()
 
         self.move()
+        if self.dying:
+            self.tm -= 1
+            if self.tm == 0:
+                self.die()
+                self.dying = False
+            else:
+                self.next_image("die")
+                return
+
         if self.cd != 0:
             self.cd -= 1
             if self.cd == 0:
@@ -281,7 +290,11 @@ class Charecter(pygame.sprite.Sprite):
             if lst_col:
                 if all(map(lambda x: x.is_killing(), lst_col)):
                     # print(11111111)
-                    self.die()
+                    self.dying = True
+                    self.tm = 7
+                    self.rect = self.rect.move(self.x_move * 2, self.y_move * 2)
+                    self.mod = 3
+                    # self.die()
                     return
                 if y < 0:
                     b = 0
@@ -317,8 +330,10 @@ class Charecter(pygame.sprite.Sprite):
             self.rect = self.rect.move(0, -1)
             if lst_col:
                 if all(map(lambda x: x.is_killing(), lst_col)):
-                    self.rect = self.rect.move(self.x_move, self.y_move)
-                    self.die()
+                    self.dying = True
+                    self.tm = 1
+                    self.rect = self.rect.move(self.x_move * 2, self.y_move * 2)
+                    self.mod = 3
                     return
                 self.y_move = 0
             else:
@@ -350,7 +365,10 @@ class Charecter(pygame.sprite.Sprite):
             if lst_col:
                 if all(map(lambda x: x.is_killing(), lst_col)):
                     # print(11111111)
-                    self.die()
+                    self.dying = True
+                    self.tm = 1
+                    self.rect = self.rect.move(self.x_move * 2, self.y_move * 2)
+                    self.mod = 3
                     return
                 # print(self.rect.right)
                 if x < 0:
@@ -400,7 +418,10 @@ class Charecter(pygame.sprite.Sprite):
             if lst_col:
                 if all(map(lambda x: x.is_killing(), lst_col)):
                     # print(11111111)
-                    self.die()
+                    self.dying = True
+                    self.tm = 1
+                    self.rect = self.rect.move(self.x_move * 2, self.y_move * 2)
+                    self.mod = 3
                     return
                 # print(self.rect.right)
                 if x < 0:
@@ -436,7 +457,10 @@ class Charecter(pygame.sprite.Sprite):
             if lst_col:
                 if all(map(lambda x: x.is_killing(), lst_col)):
                     # print(11111111)
-                    self.die()
+                    self.dying = True
+                    self.tm = 1
+                    self.rect = self.rect.move(self.x_move * 2, self.y_move * 2)
+                    self.mod = 3
                     return
                 # print(self.rect.right)
                 self.mod = 1
@@ -498,6 +522,9 @@ class Charecter(pygame.sprite.Sprite):
             all_sprites.remove(i)
         pole.effects.clear()
 
+    def next_image(self, mod):
+        pass
+
 
 class Triger(pygame.sprite.Sprite):
     def __init__(self, pos):
@@ -517,7 +544,8 @@ class Button(pygame.sprite.Sprite):
         super().__init__(all_sprites)
         self.funct = funct
         self.rect = pygame.Rect(x1, y1, x2, y2)
-        self.arr = [load_image(f'buttons\{name}.png')] + [load_image(f'buttons\{name}_pressed.png')]
+        self.arr = [load_image(f'buttons\{name}.png', colorkey=(0, 0, 0))] + [
+            load_image(f'buttons\{name}_pressed.png', colorkey=(0, 0, 0))]
         self.image = self.arr[0]
 
     def dot(self, pos):
@@ -647,16 +675,19 @@ class Jump_Effect(Effect):
         self.limit = 11
         self.arr = JUMP_IMGS
 
+
 class Fall_Effect(Effect):
-    def init(self,x,y,args):
+    def init(self, x, y, args):
         self.limit = 7
         self.arr = FALL_IMGS
 
+
 class Nadps(pygame.sprite.Sprite):
-    def __init__(self, x,y,x1,y1, name):
+    def __init__(self, x, y, x1, y1, name):
         super().__init__(all_sprites)
-        self.rect = pygame.Rect(x,y,x1,y1)
-        self.image = load_image(f'{name}.png', colorkey=(255,255,255))
+        self.rect = pygame.Rect(x, y, x1, y1)
+        self.image = load_image(f'{name}.png', colorkey=(255, 255, 255))
+
 
 def quit():
     global running
@@ -693,15 +724,16 @@ def to_menu():
     pole.level = "menu"
     pole.update_level()
 
+
 def new_item():
     a = input('да')
     if a in OBJECTI:
-
         pole.drowing = True
         pole.obj = a
 
+
 def creat_obj(a, c):
-    global  d
+    global d
     if a == "plank":
         x, y = c[0]
         x2, y2 = c[1]
@@ -738,10 +770,9 @@ def creat_obj(a, c):
         z.append([x, y, y2 - y, "right"])
         d["ship"] = z
 
-
-
     pole.obj = None
     pole.item_ojc = []
+
 
 def delete_last():
     a = pole.arr.pop()
@@ -751,6 +782,7 @@ def delete_last():
         d["ship"] = d["ship"][:-1]
     elif a.__class__ == Planka:
         d["plank"] = d["plank"][:-1]
+
 
 def savve():
     global d
@@ -766,9 +798,8 @@ if __name__ == "__main__":
     size = width, height
     screen = pygame.display.set_mode(size)
     ZASTAVKA = load_image("ZASTAVKA.png")
-    screen.blit(ZASTAVKA, (0,0))
+    screen.blit(ZASTAVKA, (0, 0))
     pygame.display.flip()
-
 
     DASH_SPEED = 10
     DASH_DISTANS = 80
@@ -776,9 +807,9 @@ if __name__ == "__main__":
     DASH_IMGS = [load_image(f'dash\dash{s + 1}.png', colorkey=(255, 255, 255)) for s in range(14)]
     FINISH_IMGS = [load_image(f'finish\\finish{s + 1}.png', colorkey=(0, 0, 0)) for s in range(4)]
     JUMP_IMGS = [load_image(f'jump\{s + 1}.png', colorkey=(255, 255, 255)) for s in range(11)]
-    FALL_IMGS =  [load_image(f'fall\{s + 1}.png', colorkey=(255, 255, 255)) for s in range(7)]
+    FALL_IMGS = [load_image(f'fall\{s + 1}.png', colorkey=(255, 255, 255)) for s in range(7)]
     WALL = load_image('wall.png')
-    ZAD = [load_image('zadnik.png')]
+    ZAD = [load_image('zadnik.png'), load_image("zadnik2.png")]
     SL = load_image('ship_left.png', colorkey=(255, 255, 255))
     SR = load_image('ship_right.png', colorkey=(255, 255, 255))
     SU = load_image('ship_up.png', colorkey=(255, 255, 255))
@@ -798,13 +829,13 @@ if __name__ == "__main__":
     ticks = 59
     clock.tick(1)
     while running:
-        ticks += 1
+        # ticks += 1
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 quit()
             else:
                 pole.event_reaction(event)
-        screen.blit(ZAD[0], (0, 0))#ticks // 60 % 1
+        screen.blit(ZAD[0], (0, 0))  # ticks // 60 % 1
         pole.update()
         all_sprites.draw(screen)
         clock.tick(fps)
