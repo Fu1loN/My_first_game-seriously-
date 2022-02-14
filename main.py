@@ -3,6 +3,7 @@ import os
 import sys
 from random import randint
 import json
+from collections import deque
 
 pygame.init()
 
@@ -22,18 +23,22 @@ def load_image(name, colorkey=None):
         image = image.convert_alpha()
     return image
 
+
 def colide(her, group):
     z = her.pseudorect
-    #print(z, her.rect)
+    # print(z, her.rect)
     c = []
     for i in group:
         if z.colliderect(i.rect):
             c.append(i)
     return c
 
+
 def pseudo(r):
     y, x = r.top, r.left
     return pygame.Rect(x + 3, y, 44, 50)
+
+
 class Pole:
     def __init__(self, level):
         self.level = level
@@ -153,13 +158,18 @@ class Pole:
         self.trigger.update()
 
 
-
 class Charecter(pygame.sprite.Sprite):
     def __init__(self, pos):
         super().__init__(all_sprites)
         self.imgs = []
-        for i in range(1, 6):
-            self.imgs.append(load_image(f'{i}.png', colorkey=(255, 255, 255)))
+        self.imgs.append(load_image("1r.png", colorkey=(255, 255, 255)))
+        self.imgs.append(load_image("1l.png", colorkey=(255, 255, 255)))
+        self.imgs.append(load_image("3r.png", colorkey=(255, 255, 255)))
+        self.imgs.append(load_image("3l.png", colorkey=(255, 255, 255)))
+        self.imgs.append(load_image("2r.png", colorkey=(255, 255, 255)))
+        self.imgs.append(load_image("2l.png", colorkey=(255, 255, 255)))
+        self.imgs.append(load_image("4r.png", colorkey=(255, 255, 255)))
+        self.imgs.append(load_image("4l.png", colorkey=(255, 255, 255)))
         self.image = self.imgs[0]
         x, y = pos
         self.rect = pygame.Rect(x, y, 50, 50)
@@ -179,8 +189,11 @@ class Charecter(pygame.sprite.Sprite):
         self.cd = 0
         self.dying = False
         self.jump_boost = -100000
+        self.ticker = 0
 
         self.can_doble = True
+
+        self.next_imgs = deque()
 
     def react(self, ev):
         # print(ev.key)
@@ -199,12 +212,20 @@ class Charecter(pygame.sprite.Sprite):
             elif ev.key == 97 and self.mod != 2:
                 self.x_move = -2.5
                 self.lpress = True
+                if self.mod == 0:
+                    self.next_imgs.append((1, 1))
+                if self.mod == 1:
+                    self.next_imgs.append((5, 1))
                 self.rat = -1
             # elif ev.key == pygame.K_UP:
             # self.y_move = -5
             elif ev.key == 100 and self.mod != 2:
                 self.x_move = 2.5
                 self.rpress = True
+                if self.mod == 1:
+                    self.next_imgs.append((4, 1))
+                if self.mod == 0:
+                    self.next_imgs.append((0, 1))
                 self.rat = 1
             # elif ev.key == pygame.K_DOWN:
             # self.y_move = 5
@@ -212,6 +233,10 @@ class Charecter(pygame.sprite.Sprite):
                 self.y_move = -7
                 self.mod = 1
                 self.jump_boost = 0
+                if self.rat == 1:
+                    self.next_imgs.append((4, 1))
+                else:
+                    self.next_imgs.append((5, 1))
             elif ev.key == 108 and self.mod == 1 and self.can_doble:
                 self.y_move = -7
                 self.mod = 1
@@ -221,6 +246,10 @@ class Charecter(pygame.sprite.Sprite):
             elif (ev.key == 59 or ev.key == 1078) and self.can_dash:
                 self.mod = 2
                 self.can_dash = False
+                if self.rat == 1:
+                    self.next_imgs.append((2, 1))
+                else:
+                    self.next_imgs.append((3, 1))
                 if self.rat == 1:
                     pole.effects.append(Dash_Effect(self.rect.left, self.rect.top, self.rat))
                 else:
@@ -252,14 +281,12 @@ class Charecter(pygame.sprite.Sprite):
 
         self.move()
         self.pseudorect = self.pseudorect.move(self.x_move, self.y_move)
+        self.next_image()
         if self.dying:
             self.tm -= 1
             if self.tm == 0:
                 self.die()
                 self.dying = False
-            else:
-                self.next_image("die")
-                return
 
         if self.cd != 0:
             self.cd -= 1
@@ -274,7 +301,7 @@ class Charecter(pygame.sprite.Sprite):
             if self.lpress == True:
                 self.x_move = -5
 
-        # self.image = self.imgs[int(self.num)  % 5]
+        #  = self.imgs[int(self.num)  % 5]
 
     # mods
     # 1 = падать
@@ -330,7 +357,13 @@ class Charecter(pygame.sprite.Sprite):
                     self.mod = 0
                     pole.effects.append(Fall_Effect(self.rect.left - 10, self.rect.top + y))
                     self.can_doble = True
-                # print(b, self.rect.bottom)
+                    if self.rat == 1:
+                        #self.next_imgs.append((6, 6))
+                        self.next_imgs.append((0, 1))
+                    else:
+                        #self.next_imgs.append((7, 6))
+                        self.next_imgs.append((1, 1))
+                    # print(b, self.rect.bottom)
                 # print(y)
             self.y_move = y
 
@@ -458,7 +491,6 @@ class Charecter(pygame.sprite.Sprite):
                 # print(x)
             self.x_move = x
         elif self.mod == 2:
-            self.image = self.imgs[2]
             x = DASH_SPEED * self.rat
             self.pseudorect = self.pseudorect.move(x, 0)
             lst_col = colide(self, all_wals)
@@ -498,16 +530,23 @@ class Charecter(pygame.sprite.Sprite):
                 # print(x)
 
             if self.mod == 1:
+
                 self.charge = 0
                 self.cd = DASH_CD
-                self.image = self.imgs[0]
+                if self.rat == 1:
+                    self.next_imgs.append((0, 1))
+                else:
+                    self.next_imgs.append((1, 1))
 
             else:
                 if abs(self.charge) > DASH_DISTANS:
                     self.mod = 1
                     self.charge = 0
                     self.cd = DASH_CD
-                    self.image = self.imgs[0]
+                    if self.rat == 1:
+                        self.next_imgs.append((0, 1))
+                    else:
+                        self.next_imgs.append((1, 1))
                 else:
                     self.charge += x
             self.x_move = x
@@ -532,8 +571,12 @@ class Charecter(pygame.sprite.Sprite):
             all_sprites.remove(i)
         pole.effects.clear()
 
-    def next_image(self, mod):
-        pass
+    def next_image(self):
+        self.ticker -= 1
+        if self.next_imgs and self.ticker <= 0:
+            x ,self.ticker = self.next_imgs.popleft()
+            self.image = self.imgs[x]
+        return
 
 
 class Triger(pygame.sprite.Sprite):
@@ -808,7 +851,7 @@ if __name__ == "__main__":
     size = width, height
     screen = pygame.display.set_mode(size)
     pygame.display.set_caption("Игра the game")
-    pygame.display.set_icon(load_image('1.png', colorkey=(255,255,255)))
+    pygame.display.set_icon(load_image('1l.png', colorkey=(255, 255, 255)))
     ZASTAVKA = load_image("ZASTAVKA.png")
     screen.blit(ZASTAVKA, (0, 0))
     pygame.display.flip()
