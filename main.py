@@ -45,6 +45,7 @@ class Pole:
         # self.test_init()
         self.update_ = True
         self.pressdbtn = None
+        self.prsb = None
         self.update_level()
 
     def next_level(self):
@@ -65,7 +66,8 @@ class Pole:
             self.butns = []
             self.butns.append(Button(300, 200 + 50, 200, 70, contin, 'continue_game'))
             self.butns.append(Button(300, 270 + 50, 200, 70, new_game, 'new_game'))
-            self.butns.append(Button(300, 340 + 50, 200, 70, quit, 'quit'))
+            self.butns.append(Button(300, 340 + 50, 200, 70, settings_open, 'settings'))
+            self.butns.append(Button(300, 340 + 50 + 70, 200, 70, quit, 'quit'))
             return
         if self.level == "edit":
             self.drow = False
@@ -80,6 +82,15 @@ class Pole:
             lvl = Level(5)
             self.arr, self.respown, self.trigger = lvl.init()
             self.hero = Charecter(self.respown)
+            return
+        if self.level == "settings":
+            self.update_ = False
+            self.arr = []
+            self.hero = None
+            self.respown = None
+            self.trigger = None
+            self.butns = []
+            self.butns.append(Button(750, 0, 50, 50, to_menu, 'menu'))
             return
         try:
             lvl = Level(self.level)
@@ -135,8 +146,20 @@ class Pole:
                     self.pressdbtn = None
             return
         if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
-            if self.level == 'menu':
+            if event.key == 27:
+                if event.type == pygame.KEYUP:
+                    if self.level == "menu":
+                        quit()
+
+                    else:
+                        to_menu()
                 return
+            if self.level == "settings":
+                if self.prsb is not None:
+                    prsb.funct(event.unicode, event.key)
+                    return
+                else:
+                    return
             self.hero.react(event)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             print(event)
@@ -150,7 +173,7 @@ class Pole:
                 self.pressdbtn = None
 
     def update(self):
-        if self.level == "menu" or self.level == "edit":
+        if self.level in ["menu", "edit", "settings"]:
             return
         self.hero.update()
         for i in self.effects:
@@ -196,8 +219,6 @@ class Charecter(pygame.sprite.Sprite):
         self.next_imgs = deque()
 
     def react(self, ev):
-        # print(ev.key)
-
         if ev.type == pygame.KEYDOWN:
             if ev.key == 51:
                 global fps
@@ -254,8 +275,6 @@ class Charecter(pygame.sprite.Sprite):
                     pole.effects.append(Dash_Effect(self.rect.left, self.rect.top, self.rat))
                 else:
                     pole.effects.append(Dash_Effect(self.rect.left - 10, self.rect.top, self.rat))
-            else:
-                print(ev.key)
         elif ev.type == pygame.KEYUP:
             if ev.key == 97:
                 # self.x_move = 0
@@ -842,6 +861,12 @@ def savve():
     with open('1.file', 'w', encoding='utf8') as f:
         json.dump(d, f)
 
+def settings_open():
+    pole.level = "settings"
+    pole.update_level()
+
+
+
 
 if __name__ == "__main__":
 
@@ -850,7 +875,7 @@ if __name__ == "__main__":
     width, height = 800, 700
     size = width, height
     screen = pygame.display.set_mode(size)
-    pygame.display.set_caption("Игра the game")
+    pygame.display.set_caption("Slime Go!")
     pygame.display.set_icon(load_image('1l.png', colorkey=(255, 255, 255)))
     ZASTAVKA = load_image("ZASTAVKA.png")
     screen.blit(ZASTAVKA, (0, 0))

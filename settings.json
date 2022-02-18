@@ -1,0 +1,5 @@
+{"jump": ["L", 108, true],
+  "dash": [";", 59, true],
+  "left": ["A", 97 , true],
+  "right": ["D", 100, true]
+}
