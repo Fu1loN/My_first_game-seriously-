@@ -805,7 +805,7 @@ class Nadps(pygame.sprite.Sprite):
     def __init__(self, x, y, x1, y1, name):
         super().__init__(all_sprites)
         self.rect = pygame.Rect(x, y, x1, y1)
-        self.image = load_image(f'{name}.png', colorkey=(255, 255, 255))
+        self.image = load_image(f'nadpsa\\{name}.png', colorkey=(255, 255, 255))
 
 
 def quit():
