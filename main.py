@@ -209,14 +209,14 @@ class Charecter(pygame.sprite.Sprite):
     def __init__(self, pos):
         super().__init__(all_sprites)
         self.imgs = []
-        self.imgs.append(load_image("1r.png", colorkey=(255, 255, 255)))
-        self.imgs.append(load_image("1l.png", colorkey=(255, 255, 255)))
-        self.imgs.append(load_image("3r.png", colorkey=(255, 255, 255)))
-        self.imgs.append(load_image("3l.png", colorkey=(255, 255, 255)))
-        self.imgs.append(load_image("2r.png", colorkey=(255, 255, 255)))
-        self.imgs.append(load_image("2l.png", colorkey=(255, 255, 255)))
-        self.imgs.append(load_image("4r.png", colorkey=(255, 255, 255)))
-        self.imgs.append(load_image("4l.png", colorkey=(255, 255, 255)))
+        self.imgs.append(load_image("hero\\1r.png", colorkey=(255, 255, 255)))
+        self.imgs.append(load_image("hero\\1l.png", colorkey=(255, 255, 255)))
+        self.imgs.append(load_image("hero\\3r.png", colorkey=(255, 255, 255)))
+        self.imgs.append(load_image("hero\\3l.png", colorkey=(255, 255, 255)))
+        self.imgs.append(load_image("hero\\2r.png", colorkey=(255, 255, 255)))
+        self.imgs.append(load_image("hero\\2l.png", colorkey=(255, 255, 255)))
+        self.imgs.append(load_image("hero\\4r.png", colorkey=(255, 255, 255)))
+        self.imgs.append(load_image("hero\\4l.png", colorkey=(255, 255, 255)))
         self.image = self.imgs[0]
         x, y = pos
         self.rect = pygame.Rect(x, y, 50, 50)
@@ -805,7 +805,7 @@ class Nadps(pygame.sprite.Sprite):
     def __init__(self, x, y, x1, y1, name):
         super().__init__(all_sprites)
         self.rect = pygame.Rect(x, y, x1, y1)
-        self.image = load_image(f'nadpsa\\{name}.png', colorkey=(255, 255, 255))
+        self.image = load_image(f'nadps\\{name}.png', colorkey=(255, 255, 255))
 
 
 def quit():
@@ -1004,7 +1004,7 @@ if __name__ == "__main__":
     size = width, height
     screen = pygame.display.set_mode(size)
     pygame.display.set_caption("Slime Go!")
-    pygame.display.set_icon(load_image('1l.png', colorkey=(255, 255, 255)))
+    pygame.display.set_icon(load_image('hero\\1l.png', colorkey=(255, 255, 255)))
     ZASTAVKA = load_image("ZASTAVKA.png")
     screen.blit(ZASTAVKA, (0, 0))
     pygame.display.flip()
