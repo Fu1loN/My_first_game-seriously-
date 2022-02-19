@@ -6,6 +6,7 @@ import json
 from collections import deque
 
 pygame.init()
+pygame.font.init()
 
 
 def load_image(name, colorkey=None):
@@ -91,6 +92,15 @@ class Pole:
             self.trigger = None
             self.butns = []
             self.butns.append(Button(750, 0, 50, 50, to_menu, 'menu'))
+            self.arr.append(Nadps(70, 180, 200, 70, "leftST"))
+            self.butns.append(Button(370, 180,70,70,set_left_mvmnt,"no_btn"))
+            self.arr.append(Nadps(70, 250, 200, 70, "rightST"))
+            self.butns.append(Button(370, 250, 70, 70, set_right_mvmnt, "no_btn"))
+            self.arr.append(Nadps(70, 320, 200, 70, "jumpST"))
+            self.butns.append(Button(370, 320, 70, 70, set_jump_mvmnt, "no_btn"))
+            self.arr.append(Nadps(70, 390, 200, 70, "dashST"))
+            self.butns.append(Button(370, 390, 70, 70, set_dash_mvmnt, "no_btn"))
+            self.update_nps()
             return
         try:
             lvl = Level(self.level)
@@ -156,13 +166,15 @@ class Pole:
                 return
             if self.level == "settings":
                 if self.prsb is not None:
-                    prsb.funct(event.unicode, event.key)
+                    self.prsb.funct(event.unicode, event.key)
                     return
                 else:
                     return
             self.hero.react(event)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             print(event)
+            if self.prsb is not None and self.level == "settings":
+                return
             for i in self.butns:
                 if i.dot(event.pos):
                     self.pressdbtn = i
@@ -173,12 +185,24 @@ class Pole:
                 self.pressdbtn = None
 
     def update(self):
-        if self.level in ["menu", "edit", "settings"]:
+        if self.level in ["menu", "edit"]:
+            return
+        if self.level == "settings":
+            for i in range(4):
+                screen.blit(self.nps[i], (370 + 20, 180 + i * 70 + 10))
             return
         self.hero.update()
         for i in self.effects:
             i.update()
         self.trigger.update()
+
+    def update_nps(self, *args):
+        if args:
+            self.nps[args[0]] = make_txt(args[1])
+        else:
+            self.nps = []
+            for i in movment.values():
+                self.nps.append(make_txt(i[0]))
 
 
 class Charecter(pygame.sprite.Sprite):
@@ -230,7 +254,7 @@ class Charecter(pygame.sprite.Sprite):
             elif ev.key == 50:
                 print(self.rect.right)
 
-            elif ev.key == 97 and self.mod != 2:
+            elif ev.key == movment["left"][1] and self.mod != 2:
                 self.x_move = -2.5
                 self.lpress = True
                 if self.mod == 0:
@@ -240,7 +264,7 @@ class Charecter(pygame.sprite.Sprite):
                 self.rat = -1
             # elif ev.key == pygame.K_UP:
             # self.y_move = -5
-            elif ev.key == 100 and self.mod != 2:
+            elif ev.key == movment["right"][1] and self.mod != 2:
                 self.x_move = 2.5
                 self.rpress = True
                 if self.mod == 1:
@@ -250,7 +274,7 @@ class Charecter(pygame.sprite.Sprite):
                 self.rat = 1
             # elif ev.key == pygame.K_DOWN:
             # self.y_move = 5
-            elif ev.key == 108 and self.mod == 0:
+            elif ev.key == movment["jump"][1] and self.mod == 0:
                 self.y_move = -7
                 self.mod = 1
                 self.jump_boost = 0
@@ -258,13 +282,13 @@ class Charecter(pygame.sprite.Sprite):
                     self.next_imgs.append((4, 1))
                 else:
                     self.next_imgs.append((5, 1))
-            elif ev.key == 108 and self.mod == 1 and self.can_doble:
+            elif ev.key == movment["jump"][1] and self.mod == 1 and self.can_doble:
                 self.y_move = -7
                 self.mod = 1
                 self.jump_boost = -70
                 self.can_doble = False
                 pole.effects.append(Jump_Effect(self.rect.left, self.rect.top))
-            elif (ev.key == 59 or ev.key == 1078) and self.can_dash:
+            elif (ev.key == movment["dash"][1] or ev.key == 1078) and self.can_dash:
                 self.mod = 2
                 self.can_dash = False
                 if self.rat == 1:
@@ -276,17 +300,17 @@ class Charecter(pygame.sprite.Sprite):
                 else:
                     pole.effects.append(Dash_Effect(self.rect.left - 10, self.rect.top, self.rat))
         elif ev.type == pygame.KEYUP:
-            if ev.key == 97:
+            if ev.key == movment["left"][1]:
                 # self.x_move = 0
                 self.lpress = False
             # if ev.key == pygame.K_UP:
             # self.y_move = 0
-            if ev.key == 100:
+            if ev.key == movment["right"][1]:
                 # self.x_move = 0
                 self.rpress = False
             # if ev.key == pygame.K_DOWN:
             # self.y_move = 0
-            if ev.key == 108 and self.mod == 1:
+            if ev.key == movment["jump"][1] and self.mod == 1:
                 self.jump_boost = -100000
 
     def update(self):
@@ -865,7 +889,71 @@ def settings_open():
     pole.level = "settings"
     pole.update_level()
 
+def set_movment():
+    global movment
+    with open("settings.json") as f:
+        movment = json.load(f)
 
+def set_left_mvmnt():
+    pole.prsb = pole.butns[1]
+    pole.prsb.funct = set_left_mvmnt_
+    pole.update_nps(0, '')
+
+def set_left_mvmnt_(lat, cod):
+    with open("settings.json") as f:
+        d = json.load(f)
+    d["left"] = [lat, cod, False]
+    pole.prsb = None
+    pole.butns[1].funct = set_left_mvmnt
+    with open("settings.json", "w") as f:
+       json.dump(d, f)
+    set_movment()
+    pole.update_nps(0, lat)
+
+def set_right_mvmnt():
+    pole.prsb = pole.butns[2]
+    pole.prsb.funct = set_right_mvmnt_
+
+def set_right_mvmnt_(lat, cod):
+    with open("settings.json") as f:
+        d = json.load(f)
+    d["right"] = [lat, cod, False]
+    pole.prsb = None
+    pole.butns[2].funct = set_right_mvmnt
+    with open("settings.json", "w") as f:
+       json.dump(d, f)
+    set_movment()
+
+def set_jump_mvmnt():
+    pole.prsb = pole.butns[3]
+    pole.prsb.funct = set_jump_mvmnt_
+
+def set_jump_mvmnt_(lat, cod):
+    with open("settings.json") as f:
+        d = json.load(f)
+    d["jump"] = [lat, cod, False]
+    pole.prsb = None
+    pole.butns[3].funct = set_jump_mvmnt
+    with open("settings.json", "w") as f:
+       json.dump(d, f)
+    set_movment()
+
+def set_dash_mvmnt():
+    pole.prsb = pole.butns[4]
+    pole.prsb.funct = set_dash_mvmnt_
+
+def set_dash_mvmnt_(lat, cod):
+    with open("settings.json") as f:
+        d = json.load(f)
+    d["dash"] = [lat, cod, False]
+    pole.prsb = None
+    pole.butns[4].funct = set_dash_mvmnt
+    with open("settings.json", "w") as f:
+       json.dump(d, f)
+    set_movment()
+
+def make_txt(w):
+    return fnt.render(w, False, (233, 188, 2))
 
 
 if __name__ == "__main__":
@@ -895,6 +983,9 @@ if __name__ == "__main__":
     SU = load_image('ship_up.png', colorkey=(255, 255, 255))
     SD = load_image('ship_down.png', colorkey=(255, 255, 255))
     OBJECTI = ['plank', 'shipup', 'spawn', 'finish', "shipdown", "shipleft", "shipright"]
+    movment = {}
+    fnt = pygame.font.SysFont("Courier", 48)
+    set_movment()
     musor = []
     d = {}
 
