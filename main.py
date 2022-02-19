@@ -80,7 +80,7 @@ class Pole:
             self.butns.append(Button(0, 0, 50, 50, new_item, "menu"))
             self.butns.append(Button(50, 0, 50, 50, delete_last, "reset"))
             self.butns.append(Button(100, 0, 50, 50, savve, "save"))
-            lvl = Level(5)
+            lvl = Level(7)
             self.arr, self.respown, self.trigger = lvl.init()
             self.hero = Charecter(self.respown)
             return
@@ -105,6 +105,7 @@ class Pole:
         try:
             lvl = Level(self.level)
         except:
+            self.level -= 1
             self.test_init()
             return
         self.update_ = True
@@ -359,7 +360,7 @@ class Charecter(pygame.sprite.Sprite):
             if self.jump_boost >= -140:
                 flag = True
             elif y < 9:
-                y += 0.7
+                y += 0.9
             if flag:
                 self.jump_boost += y
                 if self.y_move == 0:
@@ -382,11 +383,13 @@ class Charecter(pygame.sprite.Sprite):
                     return
                 if y < 0:
                     b = 0
+                    self.jump_boost -= 50
                     for i in lst_col:
                         if i.rect.bottom > b:
                             b = i.rect.bottom
 
                     y = b - self.pseudorect.top
+
                 else:
                     b = 1000
 
@@ -1039,6 +1042,51 @@ if __name__ == "__main__":
     fps = 60
     ticks = 59
     clock.tick(1)
+    while running:
+        # ticks += 1
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                quit()
+            else:
+                pole.event_reaction(event)
+        screen.blit(ZAD[0], (0, 0))  # ticks // 60 % 1
+        pole.update()
+        all_sprites.draw(screen)
+        clock.tick(fps)
+        pygame.display.flip()
+else:
+
+    running = True
+    mod = 0
+    width, height = 800, 700
+    size = width, height
+    screen = pygame.display.set_mode(size)
+    DASH_SPEED = 10
+    DASH_DISTANS = 80
+    DASH_CD = 30
+    FINISH_IMGS = [load_image(f'finish\\finish{s + 1}.png', colorkey=(0, 0, 0)) for s in range(4)]
+    WALL = load_image('wall.png')
+    ZAD = [load_image('zadnik.png')]
+    SL = load_image('ship_left.png', colorkey=(255, 255, 255))
+    SR = load_image('ship_right.png', colorkey=(255, 255, 255))
+    SU = load_image('ship_up.png', colorkey=(255, 255, 255))
+    SD = load_image('ship_down.png', colorkey=(255, 255, 255))
+    OBJECTI = ['plank', 'shipup', 'spawn', 'finish', "shipdown", "shipleft", "shipright"]
+    movment = {}
+    fnt = pygame.font.SysFont("Courier", 48)
+    set_movment()
+    musor = []
+    d = {}
+
+    all_sprites = pygame.sprite.Group()
+    all_wals = pygame.sprite.Group()
+    triger = pygame.sprite.GroupSingle()
+
+    pole = Pole("edit")
+
+    clock = pygame.time.Clock()
+    fps = 60
+    ticks = 59
     while running:
         # ticks += 1
         for event in pygame.event.get():
