@@ -93,7 +93,7 @@ class Pole:
             self.butns = []
             self.butns.append(Button(750, 0, 50, 50, to_menu, 'menu'))
             self.arr.append(Nadps(70, 180, 200, 70, "leftST"))
-            self.butns.append(Button(370, 180,70,70,set_left_mvmnt,"no_btn"))
+            self.butns.append(Button(370, 180, 70, 70, set_left_mvmnt, "no_btn"))
             self.arr.append(Nadps(70, 250, 200, 70, "rightST"))
             self.butns.append(Button(370, 250, 70, 70, set_right_mvmnt, "no_btn"))
             self.arr.append(Nadps(70, 320, 200, 70, "jumpST"))
@@ -401,10 +401,10 @@ class Charecter(pygame.sprite.Sprite):
                     pole.effects.append(Fall_Effect(self.rect.left - 10, self.rect.top + y))
                     self.can_doble = True
                     if self.rat == 1:
-                        #self.next_imgs.append((6, 6))
+                        # self.next_imgs.append((6, 6))
                         self.next_imgs.append((0, 1))
                     else:
-                        #self.next_imgs.append((7, 6))
+                        # self.next_imgs.append((7, 6))
                         self.next_imgs.append((1, 1))
                     # print(b, self.rect.bottom)
                 # print(y)
@@ -617,7 +617,7 @@ class Charecter(pygame.sprite.Sprite):
     def next_image(self):
         self.ticker -= 1
         if self.next_imgs and self.ticker <= 0:
-            x ,self.ticker = self.next_imgs.popleft()
+            x, self.ticker = self.next_imgs.popleft()
             self.image = self.imgs[x]
         return
 
@@ -661,6 +661,7 @@ class Level:
         with open(f'levels\{name}.json', encoding='utf8') as f:
             d = json.load(f)
         self.d = d
+        self.name = name
 
     def init(self):
         d = self.d
@@ -684,6 +685,28 @@ class Level:
                     arr.append(Ship(*j))
             elif i == "nad":
                 for j in d[i]:
+                    x = j
+                    if self.name == 1:
+                        if movment["left"][-1] and movment["right"][-1]:
+                            arr.append(Nadps(*j))
+                        else:
+                            x[-1] += 'non'
+                            arr.append(Nadps(*x))
+                        continue
+                    elif self.name == 2:
+                        if movment["jump"][-1]:
+                            arr.append(Nadps(*j))
+                        else:
+                            x[-1] += 'non'
+                            arr.append(Nadps(*x))
+                        continue
+                    elif self.name == 3:
+                        if movment["dash"][-1]:
+                            arr.append(Nadps(*j))
+                        else:
+                            x[-1] += 'non'
+                            arr.append(Nadps(*x))
+                        continue
                     arr.append(Nadps(*j))
         return arr, respown, finish
 
@@ -885,19 +908,23 @@ def savve():
     with open('1.file', 'w', encoding='utf8') as f:
         json.dump(d, f)
 
+
 def settings_open():
     pole.level = "settings"
     pole.update_level()
+
 
 def set_movment():
     global movment
     with open("settings.json") as f:
         movment = json.load(f)
 
+
 def set_left_mvmnt():
     pole.prsb = pole.butns[1]
     pole.prsb.funct = set_left_mvmnt_
     pole.update_nps(0, '')
+
 
 def set_left_mvmnt_(lat, cod):
     with open("settings.json") as f:
@@ -906,13 +933,16 @@ def set_left_mvmnt_(lat, cod):
     pole.prsb = None
     pole.butns[1].funct = set_left_mvmnt
     with open("settings.json", "w") as f:
-       json.dump(d, f)
+        json.dump(d, f)
     set_movment()
     pole.update_nps(0, lat)
+
 
 def set_right_mvmnt():
     pole.prsb = pole.butns[2]
     pole.prsb.funct = set_right_mvmnt_
+    pole.update_nps(1, '')
+
 
 def set_right_mvmnt_(lat, cod):
     with open("settings.json") as f:
@@ -921,12 +951,16 @@ def set_right_mvmnt_(lat, cod):
     pole.prsb = None
     pole.butns[2].funct = set_right_mvmnt
     with open("settings.json", "w") as f:
-       json.dump(d, f)
+        json.dump(d, f)
     set_movment()
+    pole.update_nps(1, lat)
+
 
 def set_jump_mvmnt():
     pole.prsb = pole.butns[3]
     pole.prsb.funct = set_jump_mvmnt_
+    pole.update_nps(2, '')
+
 
 def set_jump_mvmnt_(lat, cod):
     with open("settings.json") as f:
@@ -935,12 +969,16 @@ def set_jump_mvmnt_(lat, cod):
     pole.prsb = None
     pole.butns[3].funct = set_jump_mvmnt
     with open("settings.json", "w") as f:
-       json.dump(d, f)
+        json.dump(d, f)
     set_movment()
+    pole.update_nps(2, lat)
+
 
 def set_dash_mvmnt():
     pole.prsb = pole.butns[4]
     pole.prsb.funct = set_dash_mvmnt_
+    pole.update_nps(3, '')
+
 
 def set_dash_mvmnt_(lat, cod):
     with open("settings.json") as f:
@@ -949,8 +987,10 @@ def set_dash_mvmnt_(lat, cod):
     pole.prsb = None
     pole.butns[4].funct = set_dash_mvmnt
     with open("settings.json", "w") as f:
-       json.dump(d, f)
+        json.dump(d, f)
     set_movment()
+    pole.update_nps(3, lat)
+
 
 def make_txt(w):
     return fnt.render(w, False, (233, 188, 2))
