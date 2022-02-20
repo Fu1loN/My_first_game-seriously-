@@ -80,7 +80,7 @@ class Pole:
             self.butns.append(Button(0, 0, 50, 50, new_item, "menu"))
             self.butns.append(Button(50, 0, 50, 50, delete_last, "reset"))
             self.butns.append(Button(100, 0, 50, 50, savve, "save"))
-            lvl = Level(7)
+            lvl = Level(9)
             self.arr, self.respown, self.trigger = lvl.init()
             self.hero = Charecter(self.respown)
             return
@@ -383,7 +383,7 @@ class Charecter(pygame.sprite.Sprite):
                     return
                 if y < 0:
                     b = 0
-                    self.jump_boost -= 50
+                    self.jump_boost -= 130
                     for i in lst_col:
                         if i.rect.bottom > b:
                             b = i.rect.bottom
@@ -1000,9 +1000,7 @@ def make_txt(w):
 
 
 if __name__ == "__main__":
-
     running = True
-    mod = 0
     width, height = 800, 700
     size = width, height
     screen = pygame.display.set_mode(size)
@@ -1029,8 +1027,6 @@ if __name__ == "__main__":
     movment = {}
     fnt = pygame.font.SysFont("Courier", 48)
     set_movment()
-    musor = []
-    d = {}
 
     all_sprites = pygame.sprite.Group()
     all_wals = pygame.sprite.Group()
@@ -1051,19 +1047,17 @@ if __name__ == "__main__":
                 pole.event_reaction(event)
         screen.blit(ZAD[0], (0, 0))  # ticks // 60 % 1
         pole.update()
-        all_sprites.draw(screen)
+        try:
+            all_sprites.draw(screen)
+        except:
+            continue
         clock.tick(fps)
         pygame.display.flip()
 else:
-
     running = True
-    mod = 0
     width, height = 800, 700
     size = width, height
     screen = pygame.display.set_mode(size)
-    DASH_SPEED = 10
-    DASH_DISTANS = 80
-    DASH_CD = 30
     FINISH_IMGS = [load_image(f'finish\\finish{s + 1}.png', colorkey=(0, 0, 0)) for s in range(4)]
     WALL = load_image('wall.png')
     ZAD = [load_image('zadnik.png')]
@@ -1072,9 +1066,6 @@ else:
     SU = load_image('ship_up.png', colorkey=(255, 255, 255))
     SD = load_image('ship_down.png', colorkey=(255, 255, 255))
     OBJECTI = ['plank', 'shipup', 'spawn', 'finish', "shipdown", "shipleft", "shipright"]
-    movment = {}
-    fnt = pygame.font.SysFont("Courier", 48)
-    set_movment()
     musor = []
     d = {}
 
@@ -1086,7 +1077,6 @@ else:
 
     clock = pygame.time.Clock()
     fps = 60
-    ticks = 59
     while running:
         # ticks += 1
         for event in pygame.event.get():
