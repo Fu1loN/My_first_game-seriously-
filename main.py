@@ -80,7 +80,7 @@ class Pole:
             self.butns.append(Button(0, 0, 50, 50, new_item, "menu"))
             self.butns.append(Button(50, 0, 50, 50, delete_last, "reset"))
             self.butns.append(Button(100, 0, 50, 50, savve, "save"))
-            lvl = Level(11)
+            lvl = Level(15)
             self.arr, self.respown, self.trigger = lvl.init()
             self.hero = Charecter(self.respown)
             return
