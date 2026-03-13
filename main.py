@@ -4,6 +4,7 @@ import sys
 from random import randint
 import json
 from collections import deque
+from const import KAYOTE_TIME, JUMP_BUFFER, LEFT_DOWN, RIGHT_DOWN, JUMP_DOWN, AIR, GROUND, DASH, DIE, BUTTON_DOWN, DASH_DOWN
 
 pygame.init()
 pygame.font.init()
@@ -206,18 +207,21 @@ class Pole:
                 self.nps.append(make_txt(i[0]))
 
 
+button_handlers = {}
+button_wrappers = {}
+BUTTONS = set()
+
+def empty_button_wrapper(button_type):
+    BUTTONS.add(button_type)
+    def decorator(func):
+        return func
+    return decorator
+
 class Charecter(pygame.sprite.Sprite):
     def __init__(self, pos):
         super().__init__(all_sprites)
         self.imgs = []
-        self.imgs.append(load_image("hero\\1r.png", colorkey=(255, 255, 255)))
-        self.imgs.append(load_image("hero\\1l.png", colorkey=(255, 255, 255)))
-        self.imgs.append(load_image("hero\\3r.png", colorkey=(255, 255, 255)))
-        self.imgs.append(load_image("hero\\3l.png", colorkey=(255, 255, 255)))
-        self.imgs.append(load_image("hero\\2r.png", colorkey=(255, 255, 255)))
-        self.imgs.append(load_image("hero\\2l.png", colorkey=(255, 255, 255)))
-        self.imgs.append(load_image("hero\\4r.png", colorkey=(255, 255, 255)))
-        self.imgs.append(load_image("hero\\4l.png", colorkey=(255, 255, 255)))
+        self.load_imgs()
         self.image = self.imgs[0]
         x, y = pos
         self.rect = pygame.Rect(x, y, 50, 50)
@@ -225,7 +229,7 @@ class Charecter(pygame.sprite.Sprite):
         # print(self.rect.bottom)
         self.x_move = 0
         self.y_move = 0
-        self.mod = 0
+        self.switch_mode(GROUND)
         self.num = 0
 
         self.lpress = False
@@ -240,8 +244,14 @@ class Charecter(pygame.sprite.Sprite):
         self.ticker = 0
 
         self.can_doble = True
-
+        self.jump_buffer = None
+        self.need_to_jump = False
+        self.kayote_time = None
         self.next_imgs = deque()
+    def load_imgs(self):
+        for number in (1,3,2,4):
+            for direction in 'rl':
+                self.imgs.append(load_image(f"hero\\{number}{direction}.png", colorkey=(255, 255, 255)))        
 
     def react(self, ev):
         if ev.type == pygame.KEYDOWN:
@@ -249,57 +259,13 @@ class Charecter(pygame.sprite.Sprite):
                 global fps
                 if fps == 60:
                     fps = 5
-                    self.die()
+                    # self.die()
                 else:
                     fps = 60
             elif ev.key == 50:
                 print(self.rect.right)
-
-            elif ev.key == movment["left"][1] and self.mod != 2:
-                self.x_move = -2.5
-                self.lpress = True
-                if self.mod == 0:
-                    self.next_imgs.append((1, 1))
-                if self.mod == 1:
-                    self.next_imgs.append((5, 1))
-                self.rat = -1
-            # elif ev.key == pygame.K_UP:
-            # self.y_move = -5
-            elif ev.key == movment["right"][1] and self.mod != 2:
-                self.x_move = 2.5
-                self.rpress = True
-                if self.mod == 1:
-                    self.next_imgs.append((4, 1))
-                if self.mod == 0:
-                    self.next_imgs.append((0, 1))
-                self.rat = 1
-            # elif ev.key == pygame.K_DOWN:
-            # self.y_move = 5
-            elif ev.key == movment["jump"][1] and self.mod == 0:
-                self.y_move = -7
-                self.mod = 1
-                self.jump_boost = 0
-                if self.rat == 1:
-                    self.next_imgs.append((4, 1))
-                else:
-                    self.next_imgs.append((5, 1))
-            elif ev.key == movment["jump"][1] and self.mod == 1 and self.can_doble:
-                self.y_move = -7
-                self.mod = 1
-                self.jump_boost = -70
-                self.can_doble = False
-                pole.effects.append(Jump_Effect(self.rect.left, self.rect.top))
-            elif (ev.key == movment["dash"][1] or ev.key == 1078) and self.can_dash:
-                self.mod = 2
-                self.can_dash = False
-                if self.rat == 1:
-                    self.next_imgs.append((2, 1))
-                else:
-                    self.next_imgs.append((3, 1))
-                if self.rat == 1:
-                    pole.effects.append(Dash_Effect(self.rect.left, self.rect.top, self.rat))
-                else:
-                    pole.effects.append(Dash_Effect(self.rect.left - 10, self.rect.top, self.rat))
+            elif pressed_button := key_binds.get(ev.key):
+                self.__getattribute__(BUTTON_DOWN[pressed_button] + '_button')(self)
         elif ev.type == pygame.KEYUP:
             if ev.key == movment["left"][1]:
                 # self.x_move = 0
@@ -311,8 +277,163 @@ class Charecter(pygame.sprite.Sprite):
                 self.rpress = False
             # if ev.key == pygame.K_DOWN:
             # self.y_move = 0
-            if ev.key == movment["jump"][1] and self.mod == 1:
+            if ev.key == movment["jump"][1] and self.mod == AIR:
                 self.jump_boost = -100000
+                self.jump_buffer = 0
+    
+
+    def mod_switcher(arg):
+        #TODO слишком сложно чето здесь
+        if callable(arg):
+            func = arg
+            def wrapper(self, mod):
+                func(self, mod)
+                for name in BUTTONS:
+                    self.__setattr__(name + '_button', button_handlers.get(mod, {}).get(name, lambda x: x))
+                return
+            return wrapper
+        mod = arg
+        def decorator(func):
+            def wrapper(self):
+                func(self)
+                for name in BUTTONS:
+                    self.__setattr__(name + '_button', button_handlers.get(mod, {}).get(name, lambda x: x))
+                return
+            return wrapper
+        return decorator
+    
+    @mod_switcher
+    def switch_mode(self, mod):
+        #TODO избавится от этой хрени
+        self.mod = mod
+    # TODO remove this much functions if possible
+    @mod_switcher(AIR)
+    def switch_mode_to_air(self):
+        pass
+    
+    @mod_switcher(GROUND)
+    def switch_mode_to_grounded(self):
+        pass
+    
+    @mod_switcher(DASH)
+    def switch_mode_to_dash(self):
+        pass
+
+    @mod_switcher(DIE)
+    def switch_mode_to_die(self):
+        pass 
+
+    def move_button(state_types, button_type):
+        if not isinstance(state_types, list):
+            state_types = [state_types]
+        def decorator(func):
+            wrapper = button_wrappers.get(button_type)
+            if wrapper is None:
+                wrapper = empty_button_wrapper(button_type)
+            wrapped_funct = wrapper(func)
+            for state_type in state_types:
+                if not button_handlers.get(state_type):
+                    button_handlers[state_type] = {}
+                button_handlers[state_type][button_type] = wrapped_funct
+            return wrapped_funct
+        return decorator
+    
+    def button(button_type):
+        BUTTONS.add(button_type)
+        def decorator(fucnt):
+            def wrapper(inner_func):
+                res = fucnt(inner_func)
+                return res, button_type
+            button_wrappers[button_type] = fucnt
+            return wrapper
+        return decorator
+
+    @button(LEFT_DOWN)
+    def left_button_down(func):
+        def wrapper(self):
+            self.x_move = -2.5
+            self.lpress = True
+            res = func(self)
+            self.rat = -1
+            return res
+        return wrapper
+    
+    @button(RIGHT_DOWN)
+    def right_button_down(func):
+        def wrapper(self):
+            self.x_move = 2.5
+            self.rpress = True
+            res = func(self)
+            self.rat = 1
+            return res
+        return wrapper
+    
+
+
+    @move_button(GROUND, LEFT_DOWN)
+    def left_button_pressed_grounded(self):
+        self.next_imgs.append((1, 1))
+
+    @move_button(AIR, LEFT_DOWN)
+    def left_button_pressed_air(self):
+        self.next_imgs.append((5, 1))
+
+
+    @move_button(GROUND, RIGHT_DOWN)
+    def right_button_pressed_grounded(self):
+        self.next_imgs.append((0, 1))
+
+    @move_button(AIR, RIGHT_DOWN)
+    def right_button_pressed_air(self):
+        self.next_imgs.append((4, 1))
+
+    @move_button(GROUND, JUMP_DOWN)
+    def jump_button_pressed_on_ground(self):
+        self.y_move = -7
+        self.switch_mode(AIR)
+        self.jump_boost = 0
+        if self.rat == 1:
+            self.next_imgs.append((4, 1))
+        else:
+            self.next_imgs.append((5, 1))
+
+    @move_button(AIR, JUMP_DOWN)
+    def jump_buttom_pressed_in_air(self):
+        #TODO разнести в еще несколько состояний
+        if self.can_doble:
+            if self.kayote_time and self.y_move >= 0:
+                self.y_move = -7
+                self.switch_mode(AIR)
+                self.jump_boost = 0
+                if self.rat == 1:
+                    self.next_imgs.append((4, 1))
+                else:
+                    self.next_imgs.append((5, 1))
+            else:
+                self.y_move = -7
+                
+                self.switch_mode(AIR)
+                self.jump_boost = -70
+                self.can_doble = False
+                pole.effects.append(Jump_Effect(self.rect.left, self.rect.top))
+        else:
+            self.jump_buffer = JUMP_BUFFER
+
+    @move_button([AIR, GROUND], DASH_DOWN)
+    def dash_button_pressed(self):       
+        if not self.can_dash:
+            return
+        
+        self.switch_mode(DASH)
+        self.can_dash = False
+        if self.rat == 1:
+            self.next_imgs.append((2, 1))
+        else:
+            self.next_imgs.append((3, 1))
+        if self.rat == 1:
+            pole.effects.append(Dash_Effect(self.rect.left, self.rect.top, self.rat))
+        else:
+            pole.effects.append(Dash_Effect(self.rect.left - 10, self.rect.top, self.rat))
 
     def update(self):
 
@@ -354,7 +475,11 @@ class Charecter(pygame.sprite.Sprite):
     # 2 дэш
     def move(self):
         #  Вертикаль
-        if self.mod == 1:
+        if self.mod == AIR:
+            if self.kayote_time:
+                self.kayote_time -= 1
+            if self.jump_buffer:
+                self.jump_buffer -= 1
             y = self.y_move
             flag = False
             if self.jump_boost >= -140:
@@ -378,7 +503,8 @@ class Charecter(pygame.sprite.Sprite):
                     self.dying = True
                     self.tm = 7
                     self.rect = self.rect.move(self.x_move * 2, self.y_move * 2)
-                    self.mod = 3
+                    
+                    self.switch_mode(DIE)
                     # self.die()
                     return
                 if y < 0:
@@ -400,7 +526,8 @@ class Charecter(pygame.sprite.Sprite):
 
                     # print(b)
                     y = b - self.pseudorect.bottom
-                    self.mod = 0
+                    
+                    self.switch_mode(GROUND)
                     pole.effects.append(Fall_Effect(self.rect.left - 10, self.rect.top + y))
                     self.can_doble = True
                     if self.rat == 1:
@@ -414,9 +541,9 @@ class Charecter(pygame.sprite.Sprite):
             self.y_move = y
 
             # непонятные вещи
-        elif self.mod == 3:
+        elif self.mod == DIE:
             self.y_move = 0
-        elif self.mod == 0:
+        elif self.mod == GROUND:
             self.pseudorect = self.pseudorect.move(0, 1)
             lst_col = colide(self, all_wals)
             self.pseudorect = self.pseudorect.move(0, -1)
@@ -425,17 +552,23 @@ class Charecter(pygame.sprite.Sprite):
                     self.dying = True
                     self.tm = 1
                     self.rect = self.rect.move(self.x_move * 2, self.y_move * 2)
-                    self.mod = 3
+                    
+                    self.switch_mode(DIE)
                     return
                 self.y_move = 0
+                self.kayote_time = KAYOTE_TIME
             else:
-                self.mod = 1
+                
+                self.switch_mode(AIR)
                 self.jump_boost = -200
-        elif self.mod == 2:
+            if self.jump_buffer:
+                self.jump_buffer = 0   
+                self.jump_button_pressed()
+        elif self.mod == DASH:
             self.y_move = 0
 
         # для x
-        if self.mod == 1:
+        if self.mod == AIR:
 
             x = self.x_move
             if (self.lpress or self.rpress) and abs(x) < 5:
@@ -458,7 +591,8 @@ class Charecter(pygame.sprite.Sprite):
                     self.dying = True
                     self.tm = 1
                     self.rect = self.rect.move(self.x_move * 2, self.y_move * 2)
-                    self.mod = 3
+                    
+                    self.switch_mode(DIE)
                     return
                 # print(self.rect.right)
                 if x < 0:
@@ -485,7 +619,7 @@ class Charecter(pygame.sprite.Sprite):
                 # print(y)
                 # print(x)
             self.x_move = x
-        elif self.mod == 0:
+        elif self.mod == GROUND:
 
             x = self.x_move
             if (self.lpress or self.rpress) and abs(x) < 5:
@@ -509,7 +643,8 @@ class Charecter(pygame.sprite.Sprite):
                     self.dying = True
                     self.tm = 1
                     self.rect = self.rect.move(self.x_move * 2, self.y_move * 2)
-                    self.mod = 3
+                    
+                    self.switch_mode(DIE)
                     return
                 # print(self.rect.right)
                 if x < 0:
@@ -536,7 +671,7 @@ class Charecter(pygame.sprite.Sprite):
                 # print(y)
                 # print(x)
             self.x_move = x
-        elif self.mod == 2:
+        elif self.mod == DASH:
             x = DASH_SPEED * self.rat
             self.pseudorect = self.pseudorect.move(x, 0)
             lst_col = colide(self, all_wals)
@@ -547,10 +682,12 @@ class Charecter(pygame.sprite.Sprite):
                     self.dying = True
                     self.tm = 1
                     self.rect = self.rect.move(self.x_move * 2, self.y_move * 2)
-                    self.mod = 3
+                    
+                    self.switch_mode(DIE)
                     return
                 # print(self.rect.right)
-                self.mod = 1
+                
+                self.switch_mode(AIR)
                 if x < 0:
                     b = 0
 
@@ -575,7 +712,7 @@ class Charecter(pygame.sprite.Sprite):
                 # print(y)
                 # print(x)
 
-            if self.mod == 1:
+            if self.mod == AIR:
 
                 self.charge = 0
                 self.cd = DASH_CD
@@ -586,7 +723,8 @@ class Charecter(pygame.sprite.Sprite):
 
             else:
                 if abs(self.charge) > DASH_DISTANS:
-                    self.mod = 1
+                    
+                    self.switch_mode(AIR)
                     self.charge = 0
                     self.cd = DASH_CD
                     if self.rat == 1:
@@ -596,17 +734,19 @@ class Charecter(pygame.sprite.Sprite):
                 else:
                     self.charge += x
             self.x_move = x
-        elif self.mod == 3:
+        elif self.mod == DIE:
             self.x_move = 0
 
     def die(self):
         x, y = pole.respown
         self.rect = pygame.Rect(x, y, 50, 50)
         self.pseudorect = pseudo(self.rect)
-        self.mod = 1
+        
+        self.switch_mode(AIR)
         self.x_move = 0
         self.y_move = 0
-        self.mod = 0
+        
+        self.switch_mode(GROUND)
         self.num = 0
         self.charge = 0
         self.can_dash = True
@@ -840,9 +980,10 @@ def new_game():
 def to_menu():
     if True:
         d = {}
-        d['lvl'] = pole.level
-        with open('save.nhht', 'w', encoding='utf8') as f:
-            json.dump(d, f)
+        if pole.level != SETTINGS:
+            d['lvl'] = pole.level
+            with open('save.nhht', 'w', encoding='utf8') as f:
+                json.dump(d, f)
     pole.level = "menu"
     pole.update_level()
 
@@ -910,17 +1051,20 @@ def savve():
     global d
     with open('1.file', 'w', encoding='utf8') as f:
         json.dump(d, f)
-
+SETTINGS = "settings"
 
 def settings_open():
-    pole.level = "settings"
+    pole.level = SETTINGS
     pole.update_level()
 
 
 def set_movment():
-    global movment
+    global movment, key_binds
     with open("settings.json") as f:
         movment = json.load(f)
+        # TODO make key binds on run
+        for key, value in movment.items():
+            key_binds[value[1]] = key
 
 
 def set_left_mvmnt():
@@ -999,6 +1143,8 @@ def make_txt(w):
     return fnt.render(w, False, (233, 188, 2))
 
 
+
+
 if __name__ == "__main__":
     running = True
     width, height = 800, 700
@@ -1025,6 +1171,7 @@ if __name__ == "__main__":
     SD = load_image('ship_down.png', colorkey=(255, 255, 255))
     OBJECTI = ['plank', 'shipup', 'spawn', 'finish', "shipdown", "shipleft", "shipright"]
     movment = {}
+    key_binds = {}
     fnt = pygame.font.SysFont("Courier", 48)
     set_movment()
 
