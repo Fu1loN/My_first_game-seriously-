@@ -1,0 +1,25 @@
+KAYOTE_TIME = 5
+JUMP_BUFFER = 5
+
+LEFT_DOWN = 'left_down'
+RIGHT_DOWN = 'right_down'
+JUMP_DOWN = 'jump_down'
+DASH_DOWN = 'dash_down'
+
+GROUND = 0
+AIR = 1
+DASH = 2
+DIE = 3
+
+BUTTON_LEFT = 'left'
+BUTTON_RIGHT = 'right'
+BUTTON_JUMP = 'jump'
+BUTTON_DASH = 'dash'
+
+BUTTON_DOWN ={
+    BUTTON_LEFT:LEFT_DOWN,
+    BUTTON_RIGHT:RIGHT_DOWN,
+    BUTTON_JUMP:JUMP_DOWN,
+    BUTTON_DASH:DASH_DOWN
+    
+}
