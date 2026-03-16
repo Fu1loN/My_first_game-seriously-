@@ -436,7 +436,6 @@ class Charecter(pygame.sprite.Sprite):
             pole.effects.append(Dash_Effect(self.rect.left - 10, self.rect.top, self.rat))
 
     def update(self):
-
         if pygame.sprite.spritecollide(self, triger, False):
             pole.next_level()
             # try:
@@ -503,7 +502,6 @@ class Charecter(pygame.sprite.Sprite):
                     self.dying = True
                     self.tm = 7
                     self.rect = self.rect.move(self.x_move * 2, self.y_move * 2)
-                    
                     self.switch_mode(DIE)
                     # self.die()
                     return
@@ -513,20 +511,14 @@ class Charecter(pygame.sprite.Sprite):
                     for i in lst_col:
                         if i.rect.bottom > b:
                             b = i.rect.bottom
-
                     y = b - self.pseudorect.top
-
                 else:
                     b = 1000
-
                     for i in lst_col:
-
                         if i.rect.top < b:
                             b = i.rect.top
-
                     # print(b)
-                    y = b - self.pseudorect.bottom
-                    
+                    y = b - self.pseudorect.bottom        
                     self.switch_mode(GROUND)
                     pole.effects.append(Fall_Effect(self.rect.left - 10, self.rect.top + y))
                     self.can_doble = True
@@ -539,7 +531,6 @@ class Charecter(pygame.sprite.Sprite):
                     # print(b, self.rect.bottom)
                 # print(y)
             self.y_move = y
-
             # непонятные вещи
         elif self.mod == DIE:
             self.y_move = 0
@@ -551,25 +542,21 @@ class Charecter(pygame.sprite.Sprite):
                 if all(map(lambda x: x.is_killing(), lst_col)):
                     self.dying = True
                     self.tm = 1
-                    self.rect = self.rect.move(self.x_move * 2, self.y_move * 2)
-                    
+                    self.rect = self.rect.move(self.x_move * 2, self.y_move * 2)  
                     self.switch_mode(DIE)
                     return
                 self.y_move = 0
                 self.kayote_time = KAYOTE_TIME
             else:
-                
                 self.switch_mode(AIR)
                 self.jump_boost = -200
             if self.jump_buffer:
                 self.jump_buffer = 0   
-                self.jump_button_pressed()
+                self.jump_button_pressed_on_ground()
         elif self.mod == DASH:
             self.y_move = 0
-
         # для x
         if self.mod == AIR:
-
             x = self.x_move
             if (self.lpress or self.rpress) and abs(x) < 5:
                 x += self.rat / 4
@@ -589,7 +576,7 @@ class Charecter(pygame.sprite.Sprite):
                 if all(map(lambda x: x.is_killing(), lst_col)):
                     # print(11111111)
                     self.dying = True
-                    self.tm = 1
+                    self.tm = 7
                     self.rect = self.rect.move(self.x_move * 2, self.y_move * 2)
                     
                     self.switch_mode(DIE)
@@ -641,7 +628,7 @@ class Charecter(pygame.sprite.Sprite):
                 if all(map(lambda x: x.is_killing(), lst_col)):
                     # print(11111111)
                     self.dying = True
-                    self.tm = 1
+                    self.tm = 7
                     self.rect = self.rect.move(self.x_move * 2, self.y_move * 2)
                     
                     self.switch_mode(DIE)
@@ -680,7 +667,7 @@ class Charecter(pygame.sprite.Sprite):
                 if all(map(lambda x: x.is_killing(), lst_col)):
                     # print(11111111)
                     self.dying = True
-                    self.tm = 1
+                    self.tm = 7
                     self.rect = self.rect.move(self.x_move * 2, self.y_move * 2)
                     
                     self.switch_mode(DIE)
