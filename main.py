@@ -46,12 +46,17 @@ class Pole:
         self.level = level
         # self.test_init()
         self.update_ = True
+        self.state = None
         self.pressdbtn = None
         self.prsb = None
+        self.timer = 0
         self.update_level()
 
     def next_level(self):
         self.level += 1
+        self.state = 'transition'
+        self.prev_level = screen.copy()
+        all_sprites.draw(self.prev_level)
         self.update_level()
 
     def update_level(self):
@@ -172,6 +177,7 @@ class Pole:
                     return
                 else:
                     return
+            
             self.hero.react(event)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             print(event)
@@ -193,6 +199,11 @@ class Pole:
             for i in range(4):
                 screen.blit(self.nps[i], (370 + 20, 180 + i * 70 + 10))
             return
+        if self.state == 'transition':
+            self.timer += 1
+            if self.timer >= 30:
+                self.state = None 
+                self.timer = 0
         self.hero.update()
         for i in self.effects:
             i.update()
@@ -401,7 +412,9 @@ class Charecter(pygame.sprite.Sprite):
     def jump_buttom_pressed_in_air(self):
         #TODO разнести в еще несколько состояний
         if self.can_doble:
+            
             if self.kayote_time and self.y_move >= 0:
+                print('here')
                 self.y_move = -7
                 self.switch_mode(AIR)
                 self.jump_boost = 0
@@ -411,12 +424,12 @@ class Charecter(pygame.sprite.Sprite):
                     self.next_imgs.append((5, 1))
             else:
                 self.y_move = -7
-                
                 self.switch_mode(AIR)
                 self.jump_boost = -70
                 self.can_doble = False
                 pole.effects.append(Jump_Effect(self.rect.left, self.rect.top))
         else:
+            print('here2')
             self.jump_buffer = JUMP_BUFFER
 
     @move_button([AIR, GROUND], DASH_DOWN)
@@ -474,11 +487,12 @@ class Charecter(pygame.sprite.Sprite):
     # 2 дэш
     def move(self):
         #  Вертикаль
+        
+        if self.kayote_time:
+            self.kayote_time -= 1
+        if self.jump_buffer:
+            self.jump_buffer -= 1
         if self.mod == AIR:
-            if self.kayote_time:
-                self.kayote_time -= 1
-            if self.jump_buffer:
-                self.jump_buffer -= 1
             y = self.y_move
             flag = False
             if self.jump_boost >= -140:
@@ -659,6 +673,7 @@ class Charecter(pygame.sprite.Sprite):
                 # print(x)
             self.x_move = x
         elif self.mod == DASH:
+            self.kayote_time = 0
             x = DASH_SPEED * self.rat
             self.pseudorect = self.pseudorect.move(x, 0)
             lst_col = colide(self, all_wals)
@@ -1181,10 +1196,21 @@ if __name__ == "__main__":
                 pole.event_reaction(event)
         screen.blit(ZAD[0], (0, 0))  # ticks // 60 % 1
         pole.update()
-        try:
+        # try:
+        if pole.state == 'transition':
+            screen.blit(pole.prev_level, (0,0))
+            # print(pole.prev_level)
+            new_level = pygame.Surface(size)
+            new_level.blit(ZAD[0], (0, 0))
+            all_sprites.draw(new_level)
+            coords = pole.hero.rect.inflate(60 * pole.timer, 60 * pole.timer)
+            # print(coords)
+            screen.blit(new_level, coords, coords)
+        else:
             all_sprites.draw(screen)
-        except:
-            continue
+        
+        # except:
+        #     continue
         clock.tick(fps)
         pygame.display.flip()
 else:
@@ -1209,6 +1235,11 @@ else:
 
     pole = Pole("edit")
 
+    left_plus = None
+    right_plus = None
+    up_plus = None
+    down_plus = None
+
     clock = pygame.time.Clock()
     fps = 60
     while running:
@@ -1220,6 +1251,15 @@ else:
                 pole.event_reaction(event)
         screen.blit(ZAD[0], (0, 0))  # ticks // 60 % 1
         pole.update()
-        all_sprites.draw(screen)
+        if pole.state == 'transition':
+            # screen.blit(pole.prev_level)
+            new_level = pygame.Surface(size)
+            all_sprites.draw(new_level)
+            coords:pygame.Rect = pole.hero.rect
+            coords.inflate(2 * pole.timer, 2 * pole.timer)
+            print(coords)
+            screen.blit(new_level, coords, coords)
+        else:
+            all_sprites.draw(screen)
         clock.tick(fps)
         pygame.display.flip()
